@@ -1,5 +1,5 @@
 #metadata: information about the flow
-#  platformVersion: the version of the bots platform that this flow was written to work with
+#  platformVersion: the version of the bots platform that this flow was written to work with 
 metadata:
   platformVersion: 1.0
 main: true
@@ -7,10 +7,16 @@ name: fb_helper_bot
 #context: Define the variables which will used throughout the dialog flow here.
 context:
   variables:
-    source_Location: "TravelLocation"
-    destin_Location: "TravelLocation"
+    source_Location: "string"
+    destin_Location: "string"
+    requestor_name: "string"
+    requestor_contact: "string"
+    ride_type: "string"
+    requestor_timePreference: "string"
+    poolConfirmation : "string"
     iResult: "nlpresult"
-
+    
+    
 #The syntax for defining the variables is variablename: "variableType".
 # The "variableType" can be defined as a primitive type ("int", "string", "boolean"), "list", or an entity name. A variable can also hold the results returned by the Intent Engine. For these variables, the "variableType" must be "nlpresult" (for example, iResult: "nlpresult").
     greeting: "string"
@@ -29,23 +35,35 @@ context:
 #     return: "done" You can exit the flow using the return statement
 
 states:
-#  askGreeting:
-#    component: "System.List"
-#    properties:
-#      options: "Hello!, Ola!, Vannakam!, Namaste!"
-#      prompt: "Hi there! What would you like me to echo back?"
-#      variable: "greeting"
-#  askName:
-#    component: "System.Text"
-#    properties:
-#     prompt: "What is your name?"
-#     variable: "name"
-#  start:
-#    component: "System.Output"
-#    properties:
-#      text: "${greeting.value}  ${name.value}, where do you want to go?"
-#    transitions:
-#      return: "done"
+  askName:
+    component: "System.Text"
+    properties:
+      prompt: "Hi there! Let us know your official name for the carpool?"
+      variable: "requestor_name"
+  askRideType:
+    component: "System.List"
+    properties:
+      options: "Request a carpool,Offer a carpool"
+      prompt: "Let us know your choice"
+      variable: "ride_type"      
+  askSource:
+    component: "System.Text"
+    properties:
+      prompt: "Welcome ${requestor_name.value}, Let us know the source location for your carpool?"
+      variable: "source_Location"
+  askDestination:
+    component: "System.Text"
+    properties:
+      prompt: "Thanks ${requestor_name.value}, tell us the destination location for the carpool?"
+      variable: "destin_Location"       
+  asktTime:
+    component: "System.Text"
+    properties:
+      prompt: "what is your preferred timing for the same?"
+      variable: "requestor_timePreference"
+    transitions:
+      next: "travelHelp"  
+
   intent:
     component: "System.Intent"
     properties:
@@ -57,18 +75,34 @@ states:
         #LinuxHelp: "linuxHelp"
         #WeatherHelp: "weatherHelp"
         Travel: "travelHelp"
-        unresolvedIntent: "unresolved"
-
+        unresolvedIntent: "unresolved"    
+        
   travelHelp:
-    component: "System.SetVariable"
-    properties:
-      variable: "source_Location"
-      value: "${iResult.value.entityMatches['source_Location'][0]}"
-    transitions: {}
-  askLocation1:
     component: "System.List"
     properties:
-      options:
+      options: "Yes,No"
+      prompt: "Your carpool is from ${source_Location.value} to ${destin_Location.value} around ${requestor_timePreference.value} , right?"
+      variable: "poolConfirmation"
+    transitions:
+      next: "PoolBookingConfirmation"
+
+  PoolBookingConfirmation:
+    component: "System.ConditionEquals"
+    properties:
+      variable: "poolConfirmation"
+      value: "Yes"
+    transitions:
+      actions:
+        equal: "gotoBookRide"
+        notequal: "askRideType"
+
+
+  gotoBookRide:
+    component: "System.Output"
+    properties:
+      text: "Booking is in progress please wait"
+    transitions: {}  
+
   unresolved:
     component: "System.Output"
     properties:
